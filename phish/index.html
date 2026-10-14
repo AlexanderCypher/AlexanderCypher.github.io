@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spot the Phish — AJ Lab Tech</title>
+<meta name="description" content="A quick quiz: can you tell a phishing email from a real one?">
+<link rel="stylesheet" href="../lab.css">
+<style>
+  .email { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .email-head { padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface-2); font-size: 14px; }
+  .email-head div { padding: 2px 0; overflow-wrap: anywhere; }
+  .email-head span { color: var(--muted); display: inline-block; width: 72px; }
+  .email-subject { font-weight: 700; font-size: 17px; }
+  .email-body { padding: 20px; white-space: pre-line; }
+  .email-link { margin: 0 20px 20px; padding: 10px 12px; border: 1px dashed var(--border); border-radius: 6px; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+  .email-link b { color: var(--accent-2); font-weight: 400; }
+  .choices { margin-top: 16px; }
+  .verdict { margin-top: 16px; }
+  .verdict h3 { margin-bottom: 8px; }
+  .verdict ul { padding-left: 20px; color: var(--muted); }
+  .verdict li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<header><div class="wrap"><nav><a class="logo" href="../">aj<span>lab</span>tech</a><a class="back" href="../#lab">← back to the lab</a></nav></div></header>
+<main class="wrap">
+  <p class="kicker">// lab · game</p>
+  <h1>Spot the Phish</h1>
+  <p class="lead">Ten emails. Some are real, some are phishing. Look closely at who sent each one and where its links go, then decide.</p>
+
+  <div class="stats"><span>Email <b id="num">1</b>/<b id="total">10</b></span><span>Score <b id="score">0</b></span></div>
+
+  <div id="game">
+    <div class="email">
+      <div class="email-head">
+        <div><span>From</span><span id="from" class="mono" style="width:auto"></span></div>
+        <div id="replyRow"><span>Reply-To</span><span id="reply" class="mono" style="width:auto"></span></div>
+        <div><span>Attached</span><span id="attach" class="mono" style="width:auto"></span></div>
+        <div class="email-subject" id="subject"></div>
+      </div>
+      <div class="email-body" id="body"></div>
+      <div class="email-link" id="linkRow">Hover the button and the link goes to: <b id="link" class="mono"></b></div>
+    </div>
+    <div class="choices row">
+      <button class="btn btn-bad" id="btnPhish">🎣 Phish</button>
+      <button class="btn btn-primary" id="btnLegit">✅ Legit</button>
+    </div>
+    <div class="verdict card hidden" id="verdict">
+      <h3 id="vTitle"></h3>
+      <ul id="vWhy"></ul>
+      <div class="row" style="margin-top:16px"><button class="btn" id="btnNext">Next email →</button></div>
+    </div>
+  </div>
+
+  <div id="end" class="card hidden">
+    <h2 id="endTitle" style="margin-bottom:8px"></h2>
+    <p class="lead" id="endText" style="margin-bottom:16px"></p>
+    <button class="btn btn-primary" id="btnAgain">Play again</button>
+  </div>
+</main>
+<footer><div class="wrap">© 2026 AJ Lab Tech · All emails are made up for training.</div></footer>
+
+<script>
+const EMAILS = [
+  { from: 'IT Support <it-support@yourcompany-helpdesk.co>', subject: 'Your mailbox is 98% full', body: 'Your mailbox has almost reached its limit.\n\nClick below within 24 hours to increase your storage, or incoming emails will be permanently deleted.\n\n[ Upgrade storage ]', link: 'https://mail-quota-upgrade.co/login', phish: true,
+    why: ['The sender domain is a lookalike (yourcompany-helpdesk.co), not your real one.', 'It threatens you with a 24-hour deadline.', 'The button goes to an outside login page built to steal your password.'] },
+  { from: 'Payroll <payroll@yourcompany.co.uk>', subject: 'Your October payslip is available', body: 'Hi,\n\nYour October payslip is now available. Log in to the HR portal as you normally would to view it.\n\nWe will never ask for your password by email.\n\nPayroll team', phish: false,
+    why: ['It comes from your real company domain.', 'There is no link and no deadline. It tells you to go to the portal yourself.', 'It asks you for nothing.'] },
+  { from: 'Parcel Delivery <noreply@parcel-track-uk.info>', subject: 'We missed you – £1.45 redelivery fee', body: 'We tried to deliver your parcel today but nobody was home.\n\nPay the £1.45 redelivery fee to rebook your delivery.\n\n[ Rebook delivery ]', link: 'https://pay-redelivery.info/card', phish: true,
+    why: ['The tiny fee is bait. What they want is your card details.', 'It comes from a random .info domain, not a real courier.', 'It never says what the parcel is or who sent it.'] },
+  { from: 'Sarah (CEO) <sarah.ceo.office@gmail.com>', subject: 'Quick favour', body: 'Are you at your desk? I need a favour.\n\nPlease buy 5 x £100 gift cards for a client and send me the codes. Keep this between us, it\'s a surprise.\n\nSent from my phone', phish: true,
+    why: ['A free Gmail address pretending to be the CEO.', 'Gift cards plus secrecy is the classic CEO-fraud pattern.', 'Check by calling or messaging the person on a number you already have. Never reply to the email.'] },
+  { from: 'Calendar <calendar@yourcompany.co.uk>', subject: 'Invitation: Sprint planning, Thu 10:00–11:00', body: 'Jamie has invited you to Sprint planning.\n\nThursday 10:00–11:00, Room 2 / Teams\n\nAccept · Tentative · Decline', phish: false,
+    why: ['It comes from your real domain and is an internal meeting you would expect.', 'It asks for no login, no money and no file.'] },
+  { from: 'Accounts <accounts@yourcompany-invoices.com>', subject: 'OVERDUE: Invoice INV-20931', body: 'Please see the attached overdue invoice. Payment is required today to avoid late charges.\n\nOpen the attachment to view the invoice.', attach: 'INV-20931.pdf.html', phish: true,
+    why: ['The attachment ends in ".pdf.html". It is a web page pretending to be a PDF.', 'The domain is a lookalike of your real one.', 'It pushes you to pay today.'] },
+  { from: 'Security Team <security@yourcompany.co.uk.verify-login.net>', subject: 'Unusual sign-in detected', body: 'We detected a sign-in to your account from a new device.\n\nIf this wasn\'t you, verify your account now.\n\n[ Verify account ]', link: 'https://yourcompany.co.uk.verify-login.net/auth', phish: true,
+    why: ['Read the domain from the right. The real domain is verify-login.net, and "yourcompany.co.uk" is just a subdomain added to fool you.', 'Fake security alerts are a very common way to steal passwords.'] },
+  { from: 'Orders <orders@stationerysupplies.co.uk>', subject: 'Order #4471 dispatched', body: 'Good news: your order #4471 (printer paper x10, pens x50) has been dispatched and should arrive in 2–3 working days.\n\nNo action is needed.', phish: false,
+    why: ['It matches an order the office really placed.', 'It has no link, no attachment and asks for nothing.', 'If you weren\'t expecting it, check with whoever orders the stationery.'] },
+  { from: 'HR <hr@yourcompany.co.uk>', reply: 'hr-department@protonmail.com', subject: 'New bonus scheme – confirm by 5pm', body: 'Hi all,\n\nPlease open the attached spreadsheet and click "Enable Content" to see your bonus allocation. Confirm by 5pm today.\n\nHR', attach: 'Bonus_2026.xlsm', phish: true,
+    why: ['The Reply-To goes to a ProtonMail address, not the company. The From line was faked.', 'An .xlsm file asking you to "Enable Content" means macros, a classic way to deliver malware.', 'It uses money and a deadline to rush you.'] },
+  { from: 'IT Support <it@yourcompany.co.uk>', subject: 'Planned maintenance: Saturday 08:00–10:00', body: 'Hi all,\n\nEmail and file shares will be unavailable on Saturday from 08:00 to 10:00 while we install updates.\n\nNo action is required.\n\nIT', phish: false,
+    why: ['It comes from your real domain.', 'It is purely for information, with no links, logins or attachments.'] },
+];
+
+const $ = id => document.getElementById(id);
+let order, i, score, answered;
+
+function shuffle(a) { for (let k = a.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [a[k], a[j]] = [a[j], a[k]]; } return a; }
+
+function start() {
+  order = shuffle([...EMAILS]); i = 0; score = 0;
+  $('total').textContent = order.length;
+  $('end').classList.add('hidden'); $('game').classList.remove('hidden');
+  show();
+}
+
+function show() {
+  const e = order[i]; answered = false;
+  $('num').textContent = i + 1; $('score').textContent = score;
+  $('from').textContent = e.from;
+  $('replyRow').classList.toggle('hidden', !e.reply); $('reply').textContent = e.reply || '';
+  $('attach').parentElement.classList.toggle('hidden', !e.attach); $('attach').textContent = e.attach || '';
+  $('subject').textContent = e.subject;
+  $('body').textContent = e.body;
+  $('linkRow').classList.toggle('hidden', !e.link); $('link').textContent = e.link || '';
+  $('verdict').classList.add('hidden');
+  $('btnPhish').disabled = $('btnLegit').disabled = false;
+}
+
+function answer(saysPhish) {
+  if (answered) return; answered = true;
+  const e = order[i], right = saysPhish === e.phish;
+  if (right) score++;
+  $('score').textContent = score;
+  $('vTitle').innerHTML = (right ? '<span class="good">Correct.</span> ' : '<span class="badtxt">Not quite.</span> ') + (e.phish ? 'This one is phishing.' : 'This one is legit.');
+  $('vWhy').innerHTML = '';
+  e.why.forEach(w => { const li = document.createElement('li'); li.textContent = w; $('vWhy').appendChild(li); });
+  $('btnPhish').disabled = $('btnLegit').disabled = true;
+  $('btnNext').textContent = i === order.length - 1 ? 'See results →' : 'Next email →';
+  $('verdict').classList.remove('hidden');
+}
+
+function next() {
+  i++;
+  if (i < order.length) return show();
+  $('game').classList.add('hidden'); $('end').classList.remove('hidden');
+  const n = order.length;
+  const [title, text] =
+    score === n ? ['Perfect score 🛡️', 'Nothing got past you. The attackers are going to have to try harder.'] :
+    score >= n - 2 ? ['Sharp eyes 👀', 'Very good. One or two slipped through. Check the sender domain and file names every time.'] :
+    score >= n / 2 ? ['Getting there', 'Not bad, but a real attacker only needs one click. Look at the domain, the urgency and what the email asks you to do.'] :
+                     ['The phishers thank you 🎣', 'Don\'t worry, that\'s what practice is for. Give it another go.'];
+  $('endTitle').textContent = `${score}/${n} · ${title}`;
+  $('endText').textContent = text;
+}
+
+$('btnPhish').onclick = () => answer(true);
+$('btnLegit').onclick = () => answer(false);
+$('btnNext').onclick = next;
+$('btnAgain').onclick = start;
+start();
+</script>
+</body>
+</html>

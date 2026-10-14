@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AJ Lab Tech — SOC Analyst</title>
+<meta name="description" content="Security operations, detection engineering and Microsoft Sentinel / Elastic setup for small businesses.">
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #3fb950; --accent-2: #58a6ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  a { color: var(--accent-2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+  header { border-bottom: 1px solid var(--border); }
+  nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; flex-wrap: wrap; gap: 8px; }
+  .logo { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-weight: 700; color: var(--text); }
+  .logo span { color: var(--accent); }
+  nav ul { list-style: none; display: flex; gap: 20px; }
+  nav ul a { color: var(--muted); }
+  .hero { padding: 80px 0 64px; }
+  .hero .kicker { font-family: ui-monospace, Consolas, monospace; color: var(--accent); font-size: 14px; margin-bottom: 12px; }
+  .hero h1 { font-size: clamp(32px, 6vw, 48px); line-height: 1.15; margin-bottom: 16px; }
+  .hero p { color: var(--muted); font-size: 18px; max-width: 640px; margin-bottom: 28px; }
+  .btn { display: inline-block; padding: 10px 20px; border-radius: 6px; font-weight: 600; }
+  .btn-primary { background: var(--accent); color: #0d1117; }
+  .btn-ghost { border: 1px solid var(--border); color: var(--text); margin-left: 8px; }
+  .btn:hover { text-decoration: none; opacity: .9; }
+  section { padding: 56px 0; border-top: 1px solid var(--border); }
+  h2 { font-size: 28px; margin-bottom: 8px; }
+  .lead { color: var(--muted); margin-bottom: 32px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 24px; }
+  .card h3 { font-size: 18px; margin-bottom: 8px; }
+  .card p { color: var(--muted); font-size: 15px; }
+  a.card { color: inherit; transition: border-color .15s, transform .15s; }
+  a.card:hover { text-decoration: none; border-color: var(--accent); transform: translateY(-2px); }
+  .tag { display: inline-block; font-size: 12px; font-family: ui-monospace, Consolas, monospace; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 2px 10px; margin-top: 14px; }
+  .tag.soon { color: var(--muted); border-color: var(--border); }
+  .about { display: grid; grid-template-columns: 2fr 1fr; gap: 32px; }
+  .about ul { list-style: none; }
+  .about li { padding: 6px 0; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 15px; }
+  .about li strong { color: var(--text); }
+  @media (max-width: 700px) { .about { grid-template-columns: 1fr; } .btn-ghost { margin-left: 0; margin-top: 8px; } }
+  footer { border-top: 1px solid var(--border); padding: 24px 0; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <nav>
+      <a class="logo" href="#">aj<span>lab</span>tech</a>
+      <ul>
+        <li><a href="#about">About</a></li>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#products">Products</a></li>
+        <li><a href="#lab">Lab</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="hero">
+    <p class="kicker">// security operations · detection engineering</p>
+    <h1>Practical security for small businesses.</h1>
+    <p>I'm AJ, a SOC analyst. I help small teams see what's happening on their network, catch threats early and get ready for Cyber Essentials, without enterprise prices.</p>
+    <a class="btn btn-primary" href="#contact">Get in touch</a>
+    <a class="btn btn-ghost" href="#lab">Try the Lab →</a>
+  </div>
+
+  <section id="about">
+    <div class="about">
+      <div>
+        <h2>About</h2>
+        <p class="lead">I work in a security operations centre, triaging alerts, hunting threats and investigating incidents. Outside work I run a homelab where I build and break things, write detection rules and make small tools.</p>
+        <p class="lead">AJ Lab Tech is where I share that work: services for small businesses, detection content and the tools I build along the way.</p>
+      </div>
+      <ul>
+        <li><strong>Role:</strong> SOC Analyst</li>
+        <li><strong>SIEM:</strong> Microsoft Sentinel, Elastic</li>
+        <li><strong>Focus:</strong> Detection, DFIR, KQL</li>
+        <li><strong>Based:</strong> UK</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="services">
+    <h2>Services</h2>
+    <p class="lead">Fixed-price, clearly scoped work. No retainers unless you want one.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>Security health check</h3>
+        <p>A review of your accounts, devices, email security and backups, with a plain-English report and a prioritised fix list.</p>
+        <span class="tag">from £250</span>
+      </div>
+      <div class="card">
+        <h3>Sentinel / Elastic setup</h3>
+        <p>Get logging and alerting running: data connectors, sensible analytics rules and a dashboard you'll actually look at.</p>
+        <span class="tag">quoted per project</span>
+      </div>
+      <div class="card">
+        <h3>Detection engineering</h3>
+        <p>Custom KQL hunting queries and analytics rules mapped to MITRE ATT&amp;CK, tuned to cut noise in your environment.</p>
+        <span class="tag">quoted per project</span>
+      </div>
+      <div class="card">
+        <h3>Incident response playbooks</h3>
+        <p>Step-by-step runbooks for phishing, account compromise and ransomware, so your team knows what to do on a bad day.</p>
+        <span class="tag">quoted per project</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="products">
+    <h2>Products</h2>
+    <p class="lead">Detection content and templates you can drop straight into your SOC.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>Sentinel hunting query pack</h3>
+        <p>Documented KQL hunting queries for Microsoft Sentinel and Defender, with what each one finds and how to triage hits.</p>
+        <span class="tag soon">coming soon</span>
+      </div>
+      <div class="card">
+        <h3>SOC runbook templates</h3>
+        <p>Editable triage and response templates for the alerts SOC teams see most often.</p>
+        <span class="tag soon">coming soon</span>
+      </div>
+      <div class="card">
+        <h3>Projects</h3>
+        <p>Tools and experiments I'm currently working on in the lab.</p>
+        <a class="tag" href="https://github.com/AlexanderCypher">on GitHub →</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="lab">
+    <h2>Lab</h2>
+    <p class="lead">Small games and tools to play with. They all run in your browser.</p>
+    <div class="grid">
+      <a class="card" href="phish/">
+        <h3>🎣 Spot the Phish</h3>
+        <p>Ten emails, some real and some fake. Can you tell which is which?</p>
+        <span class="tag">play →</span>
+      </a>
+      <a class="card" href="triage/">
+        <h3>🚨 Alert Triage</h3>
+        <p>60 seconds on a SOC shift. Escalate the real threats and close the noise.</p>
+        <span class="tag">play →</span>
+      </a>
+      <a class="card" href="password/">
+        <h3>🔑 Password Generator</h3>
+        <p>Strong random passwords or memorable passphrases, generated in your browser.</p>
+        <span class="tag">use →</span>
+      </a>
+    </div>
+  </section>
+
+  <section id="contact">
+    <h2>Contact</h2>
+    <p class="lead">Tell me a little about your business and what you need. I'll reply within two working days.</p>
+    <a class="btn btn-primary" href="mailto:hello@ajlabtech.com">hello@ajlabtech.com</a>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">© 2026 AJ Lab Tech · AJ</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alert Triage — AJ Lab Tech</title>
+<meta name="description" content="60 seconds on a SOC shift. Escalate the real threats, close the noise.">
+<link rel="stylesheet" href="../lab.css">
+<style>
+  .timerbar { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin-bottom: 16px; }
+  .timerbar div { height: 100%; background: var(--accent); width: 100%; transition: width .2s linear; }
+  .alert { border-left: 4px solid var(--warn); }
+  .alert .sev { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--warn); margin-bottom: 6px; }
+  .alert h2 { font-size: 20px; margin-bottom: 8px; overflow-wrap: anywhere; }
+  .alert p { color: var(--muted); }
+  .actions { margin-top: 16px; }
+  .flash { margin-top: 14px; min-height: 24px; font-size: 15px; }
+  kbd { font-family: ui-monospace, Consolas, monospace; font-size: 12px; border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; color: var(--muted); }
+  .review { margin-top: 16px; padding-left: 20px; color: var(--muted); }
+  .review li { margin: 8px 0; }
+  .review b { color: var(--text); }
+</style>
+</head>
+<body>
+<header><div class="wrap"><nav><a class="logo" href="../">aj<span>lab</span>tech</a><a class="back" href="../#lab">← back to the lab</a></nav></div></header>
+<main class="wrap">
+  <p class="kicker">// lab · game</p>
+  <h1>Alert Triage</h1>
+  <p class="lead">You have 60 seconds on shift. Alerts keep arriving. <b>Escalate</b> the real threats and <b>close</b> the noise. A wrong close is a missed breach, and that costs the most.</p>
+
+  <div id="intro" class="card">
+    <p style="margin-bottom:16px">Scoring: correct +10 · wrongly escalated −5 · missed threat −20. Keyboard: <kbd>E</kbd> escalate, <kbd>C</kbd> close.</p>
+    <button class="btn btn-primary" id="btnStart">Start shift</button>
+  </div>
+
+  <div id="game" class="hidden">
+    <div class="stats"><span>Time <b id="time">60</b>s</span><span>Score <b id="score">0</b></span><span>Handled <b id="handled">0</b></span></div>
+    <div class="timerbar"><div id="bar"></div></div>
+    <div class="card alert">
+      <div class="sev" id="sev"></div>
+      <h2 id="title"></h2>
+      <p id="detail"></p>
+    </div>
+    <div class="actions row">
+      <button class="btn btn-bad" id="btnEsc">🚨 Escalate <kbd>E</kbd></button>
+      <button class="btn" id="btnClose">✔ Close <kbd>C</kbd></button>
+    </div>
+    <div class="flash" id="flash"></div>
+  </div>
+
+  <div id="end" class="card hidden">
+    <h2 id="endTitle" style="margin-bottom:6px"></h2>
+    <p class="lead" id="endText" style="margin-bottom:12px"></p>
+    <div id="reviewWrap"><h3 style="font-size:16px">What you got wrong</h3><ul class="review" id="review"></ul></div>
+    <div class="row" style="margin-top:16px"><button class="btn btn-primary" id="btnAgain">Another shift</button></div>
+  </div>
+</main>
+<footer><div class="wrap">© 2026 AJ Lab Tech · Alerts are fictional, though some are uncomfortably familiar.</div></footer>
+
+<script>
+const ALERTS = [
+  // real threats
+  { t: 'mimikatz.exe executed on FINANCE-PC-04', d: 'Process started by user j.smith from C:\\Users\\Public\\.', tp: true, why: 'Mimikatz dumps credentials. Nobody in finance needs it.' },
+  { t: '500 failed logins, then 1 success, for "admin"', d: 'All from the same external IP within 4 minutes.', tp: true, why: 'A brute-force attack that worked. The account is compromised.' },
+  { t: 'Inbox rule created: forward all mail to external address', d: 'Rule "." on the finance director\'s mailbox forwards everything to a free webmail address.', tp: true, why: 'A classic business email compromise step: the attacker reads all the mail quietly.' },
+  { t: 'PowerShell ran an encoded command', d: 'powershell -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBi…', tp: true, why: 'A hidden window plus a base64 payload, typically a download-and-run.' },
+  { t: 'vssadmin delete shadows /all /quiet', d: 'Run on FILESERVER-01 at 02:47.', tp: true, why: 'Deleting backups first is what ransomware does right before encrypting.' },
+  { t: 'Sign-in from a new country, then MFA removed', d: 'User logged in from abroad and disabled MFA 2 minutes later.', tp: true, why: 'Removing MFA right after a strange sign-in means an attacker is locking in access.' },
+  { t: 'New local admin "support$" created at 03:12', d: 'No change ticket. The account name ends in $ to look like a machine account.', tp: true, why: 'A hidden-looking admin account made at night, with no ticket, is persistence.' },
+  { t: 'WINWORD.EXE spawned cmd.exe', d: 'The user opened "Invoice_Final.docm" from email.', tp: true, why: 'Word should not launch a command shell. That is a malicious macro.' },
+  { t: '40 GB uploaded to an unknown cloud storage site', d: 'From a file server at 02:00. The destination has never been seen before.', tp: true, why: 'Large unusual uploads at night look like data theft before ransomware.' },
+  { t: 'rclone.exe running on a domain controller', d: 'Configured with a remote called "mega".', tp: true, why: 'Rclone on a DC is a common tool for stealing data.' },
+  { t: 'Domain admin logged on to the reception PC', d: 'Interactive logon by a Domain Admins account at 23:40.', tp: true, why: 'Admins shouldn\'t log in to front-desk machines at midnight. Likely lateral movement.' },
+  { t: 'Antivirus real-time protection turned off', d: 'Changed through the registry by a standard user\'s process.', tp: true, why: 'Malware turns off defences first. Users can\'t do this legitimately.' },
+  // noise
+  { t: 'User "dave" failed to log in 3 times', d: 'Monday 09:01. Then succeeded. Caps Lock was on.', tp: false, why: 'It\'s Monday morning. Dave is fine.' },
+  { t: 'Port scan from 10.0.0.5', d: 'Source is the company vulnerability scanner, on its weekly schedule.', tp: false, why: 'A scheduled, authorised scan. Tune the rule.' },
+  { t: 'Break-room smart fridge requested the time', d: 'NTP query to pool.ntp.org.', tp: false, why: 'The fridge just wants to know the time. Let it.' },
+  { t: 'Coffee machine made 400 DNS queries for "beans.local"', d: 'Over the last hour.', tp: false, why: 'Badly configured, but not malicious. Tell facilities.' },
+  { t: 'Large upload to the backup provider at 01:00', d: 'Matches the nightly backup job, same size as usual.', tp: false, why: 'The backup is doing its job.' },
+  { t: 'nmap run on DEV-VM-07', d: 'By a developer, scanning their own test VM. There is a change ticket.', tp: false, why: 'Authorised testing with a ticket.' },
+  { t: 'Impossible travel: London and Amsterdam 5 minutes apart', d: 'The second IP is the company VPN exit point.', tp: false, why: 'The VPN makes it look like travel. A classic false positive.' },
+  { t: 'CEO clicked "Forgot password" 6 times', d: 'Self-service reset was completed successfully.', tp: false, why: 'Annoying, but harmless.' },
+  { t: 'Windows Update downloaded 2 GB', d: 'From the official update servers during the patch window.', tp: false, why: 'Patching is good. Close it.' },
+  { t: 'Intern ran PowerShell: Get-Date', d: 'Followed by Get-Date again, 40 seconds later.', tp: false, why: 'The intern is just counting down to lunch.' },
+  { t: 'RDP to SQL-01 by an IT admin', d: 'During the approved Saturday maintenance window, from an IT workstation.', tp: false, why: 'Expected admin work in the approved window.' },
+  { t: 'Printer contacted the vendor\'s firmware server', d: 'Scheduled firmware check, same as every week.', tp: false, why: 'Routine printer behaviour.' },
+];
+const SEV = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+const DURATION = 60;
+const $ = id => document.getElementById(id);
+let deck, cur, score, handled, mistakes, endsAt, tick, locked;
+
+function shuffle(a) { for (let k = a.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [a[k], a[j]] = [a[j], a[k]]; } return a; }
+
+function start() {
+  deck = shuffle([...ALERTS]); score = 0; handled = 0; mistakes = []; locked = false;
+  $('intro').classList.add('hidden'); $('end').classList.add('hidden'); $('game').classList.remove('hidden');
+  $('flash').textContent = '';
+  endsAt = Date.now() + DURATION * 1000;
+  clearInterval(tick); tick = setInterval(update, 200);
+  update(); nextAlert();
+}
+
+function nextAlert() {
+  if (!deck.length) deck = shuffle([...ALERTS]);
+  cur = deck.pop();
+  $('sev').textContent = 'SEVERITY: ' + SEV[Math.floor(Math.random() * SEV.length)] + ' · ALERT #' + (1000 + handled + Math.floor(Math.random() * 90));
+  $('title').textContent = cur.t;
+  $('detail').textContent = cur.d;
+  $('score').textContent = score; $('handled').textContent = handled;
+}
+
+function decide(escalate) {
+  if (locked || $('game').classList.contains('hidden')) return;
+  handled++;
+  if (escalate === cur.tp) { score += 10; $('flash').innerHTML = '<span class="good">✔ Correct.</span> ' + esc(cur.why); }
+  else if (cur.tp) { score -= 20; mistakes.push(['Missed threat', cur]); $('flash').innerHTML = '<span class="badtxt">✖ Missed threat!</span> ' + esc(cur.why); }
+  else { score -= 5; mistakes.push(['Escalated noise', cur]); $('flash').innerHTML = '<span class="badtxt">✖ That was noise.</span> ' + esc(cur.why); }
+  nextAlert();
+}
+
+function update() {
+  const left = Math.max(0, endsAt - Date.now());
+  $('time').textContent = Math.ceil(left / 1000);
+  $('bar').style.width = (left / (DURATION * 10)) + '%';
+  $('bar').style.background = left < 10000 ? 'var(--bad)' : 'var(--accent)';
+  if (left <= 0) finish();
+}
+
+function finish() {
+  clearInterval(tick); locked = true;
+  $('game').classList.add('hidden'); $('end').classList.remove('hidden');
+  const rank = score >= 150 ? 'SOC Legend 🏆' : score >= 100 ? 'Threat Hunter 🔎' : score >= 50 ? 'Analyst ☕' : score >= 0 ? 'Junior Analyst' : 'The attacker\'s favourite 💀';
+  $('endTitle').textContent = `${score} points · ${rank}`;
+  const missed = mistakes.filter(m => m[0] === 'Missed threat').length;
+  $('endText').textContent = `You handled ${handled} alerts with ${mistakes.length} mistake${mistakes.length === 1 ? '' : 's'}` + (missed ? `, including ${missed} missed threat${missed === 1 ? '' : 's'}.` : '. No threats got past you.');
+  $('review').innerHTML = mistakes.map(([k, a]) => `<li><b>${k}:</b> ${esc(a.t)}. ${esc(a.why)}</li>`).join('');
+  $('reviewWrap').classList.toggle('hidden', !mistakes.length);
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+$('btnStart').onclick = start;
+$('btnAgain').onclick = start;
+$('btnEsc').onclick = () => decide(true);
+$('btnClose').onclick = () => decide(false);
+document.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (k === 'e') decide(true);
+  else if (k === 'c') decide(false);
+});
+</script>
+</body>
+</html>
